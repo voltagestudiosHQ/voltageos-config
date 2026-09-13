@@ -2,7 +2,8 @@
 
 The repository includes the Kiwi-NG description in `kiwi/config.xml`.
 It builds the Fedora 44-based voltage!os KDE Plasma image with SDDM,
-Vivaldi, and Thunderbird.
+Vivaldi, Thunderbird, and the custom `voltageos` Plymouth theme with BGRT
+firmware-logo support.
 
 ## Build environment
 

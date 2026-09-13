@@ -1,7 +1,10 @@
 name: Build
 
 on:
-  tag:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
 
 permissions:
   contents: read

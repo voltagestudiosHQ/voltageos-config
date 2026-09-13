@@ -36,6 +36,9 @@
     <package name="chrony"/>
     <package name="sudo"/>
     <package name="openssh-server"/>
+    <package name="plymouth"/>
+    <package name="plymouth-plugin-script"/>
+    <package name="plymouth-theme-bgrt"/>
     <package name="plasma-desktop"/>
     <package name="plasma-workspace"/>
     <package name="plasma-nm"/>

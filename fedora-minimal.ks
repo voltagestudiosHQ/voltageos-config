@@ -35,6 +35,9 @@ NetworkManager-wifi
 openssh-clients
 openssh-server
 pipewire
+plymouth
+plymouth-plugin-script
+plymouth-theme-bgrt
 plasma-desktop
 plasma-nm
 plasma-pa
@@ -53,6 +56,45 @@ xdg-user-dirs
 %end
 
 %post
+install -d -m 0755 /usr/share/plymouth/themes/voltageos
+
+cat > /usr/share/plymouth/themes/voltageos/voltageos.plymouth <<'THEME'
+[Plymouth Theme]
+Name=voltage!os
+Description=voltage!os codename lagtrain boot theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/voltageos
+ScriptFile=/usr/share/plymouth/themes/voltageos/voltageos.script
+THEME
+
+cat > /usr/share/plymouth/themes/voltageos/voltageos.script <<'SCRIPT'
+Window.SetBackgroundTopColor(0.063, 0.035, 0.059);
+Window.SetBackgroundBottomColor(0.008, 0.004, 0.008);
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+panel_y = screen_height * 0.42;
+logo = Label("voltage!os");
+logo.SetPosition(screen_width / 2, panel_y, 20);
+logo.SetAlignment(0.5, 0.5);
+logo.SetColor(1.0, 0.84, 0.88);
+codename = Label("codename lagtrain");
+codename.SetPosition(screen_width / 2, panel_y + screen_height * 0.055, 20);
+codename.SetAlignment(0.5, 0.5);
+codename.SetColor(0.79, 0.43, 0.52);
+status = Label("Starting system");
+status.SetPosition(screen_width / 2, panel_y + screen_height * 0.11, 20);
+status.SetAlignment(0.5, 0.5);
+status.SetColor(1.0, 0.23, 0.37);
+fun message_callback(message) {
+	status.SetText(message);
+}
+Plymouth.SetMessageFunction(message_callback);
+SCRIPT
+
+plymouth-set-default-theme voltageos -R
+
 cat > /etc/voltage-os-release <<'RELEASE'
 NAME="voltage!os"
 CODENAME=lagtrain
