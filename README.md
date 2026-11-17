@@ -1,42 +1,53 @@
 # voltage!os
 
-Minimal Fedora 44-based KDE Plasma operating system configuration for codename
-`lagtrain`, with Vivaldi Browser and Thunderbird.
+Rolling-release Arch Linux-based KDE Plasma live image, built for `x86_64`
+and `aarch64`. It includes Firefox and Thunderbird. The x86_64 image uses Arch
+Linux repositories; the aarch64 image uses Arch Linux ARM repositories.
 
-## First boot
+## Live image
 
-The Kickstart installs a minimal KDE Plasma desktop with Vivaldi Browser
-included in the installer package transaction, then
-uses firstboot and KDE's `plasma-welcome` first-run experiences after the
-initial setup account is created.
+The images start a KDE Plasma desktop with a temporary `voltage` user. On
+x86_64, use `archinstall` from a terminal to install Arch Linux, or use the
+live environment to test the system. The aarch64 image boots with UEFI GRUB;
+installation and boot support depend on the ARM hardware. Changes made in the
+live session are not persistent.
 
-The image targets Fedora `x86_64` and `aarch64` systems. The Vivaldi repository
-uses the matching RPM architecture path.
-Thunderbird is pre-bundled, while KDE's KMail and Kontact mail applications
-are excluded.
+The live user has passwordless `sudo` for installation and system
+administration. Do not treat the live image as an installed system.
 
-## Install
+Build artifacts are ArchISO images produced from the official ArchISO `releng`
+profile with the packages and live-session configuration in `archiso/`. The
+ARM build uses Arch Linux ARM packages, a signed ArchISO package from Arch's
+rolling repository, and the architecture-specific UEFI profile in
+`archiso/aarch64/`. Its CI builder uses the multi-architecture
+[Arch Linux ARM container](https://github.com/Menci/docker-archlinuxarm)
+because Arch Linux ARM does not publish an `archiso` package.
 
-Use `fedora-minimal.ks` with a Fedora installer:
+`os-release` defines the voltage!os identity used in the live environment.
+`VERSION=Rolling` identifies the rolling release; `VERSION_CODENAME=lagtrain`
+is the project codename.
 
-```text
-inst.ks=https://example.invalid/fedora-minimal.ks
+## Build locally
+
+For a local x86_64 build on Arch Linux, install `archiso`, then run:
+
+```sh
+sudo pacman -Syu archiso
+mkdir -p build
+cp -a /usr/share/archiso/configs/releng build/profile
+cat archiso/packages >> "build/profile/packages.$(uname -m)"
+cp -a archiso/airootfs/. build/profile/airootfs/
+install -Dm644 os-release build/profile/airootfs/etc/os-release
+sed -i \
+  -e 's/^iso_name=.*/iso_name="voltageos"/' \
+  -e 's/^iso_label=.*/iso_label="VOLTAGE_ROLLING"/' \
+  -e 's/^iso_publisher=.*/iso_publisher="Voltage Studios"/' \
+  -e 's/^iso_application=.*/iso_application="voltage!os Arch Linux Rolling live image"/' \
+  -e 's/^iso_version=.*/iso_version="Rolling"/' \
+  build/profile/profiledef.sh
+mkarchiso -v -w build/work -o build/out build/profile
 ```
 
-The profile erases all detected disks and uses automatic LVM partitioning.
-Test it in a virtual machine before installing on hardware.
-
-`dnf.conf` contains conservative DNF defaults for the installed system.
-
-`os-release` is the editable operating system identity file. Install it as
-`/etc/os-release` in the image build to set the name, codename, version, and
-project URLs reported by the operating system.
-
-`anaconda.css` is the source stylesheet for a voltage!os-themed Anaconda
-installer. It must be included through the installer image or Anaconda theme
-integration to be loaded at install time.
-
-See [KIWI-NG.md](KIWI-NG.md) for Kiwi-NG installation and image-build
-instructions. Kiwi-NG uses an XML description; `fedora-minimal.ks` remains the
-Anaconda Kickstart path. GitHub Actions builds with Fedora 44; Debian or Ubuntu
-can be used for local Kiwi-NG builds when the `kiwi-ng` package is available.
+The GitHub Actions workflow builds both supported architectures. It installs
+the current ArchISO package, so the resulting image follows Arch's rolling
+repositories and is not pinned to a dated base release.

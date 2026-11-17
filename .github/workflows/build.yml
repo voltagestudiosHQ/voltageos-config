@@ -13,32 +13,33 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install XML validator
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libxml2-utils
-
-      - name: Validate Kiwi-NG XML
-        run: xmllint --noout kiwi/config.xml
-
-      - name: Validate configuration content
-        shell: bash
+      - name: Validate Arch configuration
         run: |
           set -euo pipefail
-          grep -Fq 'repo=fedora-44' fedora-minimal.ks
-          grep -Fq 'repo=updates-released-f44' fedora-minimal.ks
-          grep -Fq 'plasma-desktop' fedora-minimal.ks
-          grep -Fq 'plasma-welcome' fedora-minimal.ks
-          grep -Fq 'thunderbird' fedora-minimal.ks
-          grep -Fq 'vivaldi-stable' fedora-minimal.ks
-          grep -Fq 'firstboot --enable' fedora-minimal.ks
-          ! grep -Fq 'user --name=voltage' fedora-minimal.ks
-          grep -Fq 'BASE_VERSION=44' os-release
+          grep -Fq 'ID_LIKE=arch' os-release
+          grep -Fq 'VERSION="Rolling"' os-release
+          grep -Fq 'firefox' archiso/packages
+          grep -Fq 'thunderbird' archiso/packages
+          grep -Fq 'plasma-desktop' archiso/packages
+          grep -Fq 'linux-aarch64' archiso/aarch64/packages
+          grep -Fq "bootmodes=('uefi.grub')" archiso/aarch64/profile-overrides.sh
+          grep -Fq 'User=voltage' archiso/airootfs/etc/sddm.conf.d/10-voltage.conf
+          test -x archiso/airootfs/root/customize_airootfs.sh
+          test -f archiso/aarch64/linux-aarch64.preset
+          test -f archiso/aarch64/pacman.conf
+          bash -n archiso/airootfs/root/customize_airootfs.sh
+          bash -n archiso/aarch64/profile-overrides.sh
+          python3 -c 'import ast; ast.parse(open("archiso/aarch64/patch_grub.py").read())'
+          test ! -e fedora-minimal.ks
+          test ! -e dnf.conf
+          test ! -e kiwi/config.xml
 
       - name: Check whitespace
         run: git diff --check
 
   build:
     needs: validate
-    name: Build ${{ matrix.arch }} on Fedora 44
+    name: Build ${{ matrix.arch }} Arch Rolling ISO
     permissions:
       contents: read
       id-token: write
@@ -49,47 +50,97 @@ jobs:
         include:
           - arch: x86_64
             runner: ubuntu-24.04
+            image: archlinux:latest
           - arch: aarch64
             runner: ubuntu-24.04-arm
+            image: menci/archlinuxarm:latest
     runs-on: ${{ matrix.runner }}
-    container: fedora:44
+    container:
+      image: ${{ matrix.image }}
+      options: --privileged
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Kiwi-NG
-        run: dnf -y install kiwi-cli
+      - name: Install ArchISO on Arch Linux
+        if: matrix.arch == 'x86_64'
+        run: pacman -Syu --noconfirm archiso
 
-      - name: Select ${{ matrix.arch }} description
+      - name: Install ArchISO on Arch Linux ARM
+        if: matrix.arch == 'aarch64'
         run: |
+          set -euo pipefail
+          cp archiso/aarch64/mirrorlist /etc/pacman.d/mirrorlist
+          pacman-key --init
+          pacman-key --populate archlinuxarm
+          pacman -Sy --noconfirm --needed archlinuxarm-keyring archlinux-keyring
+          pacman-key --populate archlinux
+          pacman -Su --noconfirm
+          pacman -S --noconfirm --needed \
+            arch-install-scripts curl dosfstools e2fsprogs erofs-utils gawk grub \
+            libarchive libisoburn mtools mkinitcpio mkinitcpio-archiso \
+            python squashfs-tools
+          curl --fail --location --retry 5 \
+            https://geo.mirror.pkgbuild.com/extra/os/x86_64/extra.db \
+            --output /tmp/arch-extra.db
+          package="$(
+            tar -xOf /tmp/arch-extra.db --wildcards 'archiso-*/desc' \
+              | awk 'found { print; exit } $0 == "%FILENAME%" { found = 1 }'
+          )"
+          test -n "$package"
+          curl --fail --location --retry 5 \
+            "https://geo.mirror.pkgbuild.com/extra/os/x86_64/$package" \
+            --output "/tmp/$package"
+          curl --fail --location --retry 5 \
+            "https://geo.mirror.pkgbuild.com/extra/os/x86_64/$package.sig" \
+            --output "/tmp/$package.sig"
+          pacman -U --noconfirm "/tmp/$package"
+          python archiso/aarch64/patch_grub.py /usr/bin/mkarchiso
+
+      - name: Prepare ${{ matrix.arch }} profile
+        run: |
+          set -euo pipefail
           mkdir -p build
-          cp -a kiwi build/kiwi
-          sed -i 's/x86_64/${{ matrix.arch }}/g' build/kiwi/config.xml
+          cp -a /usr/share/archiso/configs/releng build/profile
+          cp -a archiso/airootfs/. build/profile/airootfs/
+          install -Dm644 os-release build/profile/airootfs/etc/os-release
+          if [[ '${{ matrix.arch }}' == 'aarch64' ]]; then
+            cp archiso/aarch64/packages build/profile/packages.aarch64
+            cp archiso/aarch64/pacman.conf build/profile/pacman.conf
+            cp archiso/aarch64/mirrorlist build/profile/airootfs/etc/pacman.d/mirrorlist
+            cp archiso/aarch64/archiso.conf \
+              build/profile/airootfs/etc/mkinitcpio.conf.d/archiso.conf
+            mkdir -p build/profile/airootfs/usr/share/voltageos
+            cp archiso/aarch64/linux-aarch64.preset \
+              build/profile/airootfs/usr/share/voltageos/
+            cp archiso/aarch64/grub.cfg build/profile/grub/grub.cfg
+            cat archiso/aarch64/profile-overrides.sh >> build/profile/profiledef.sh
+          else
+            cat archiso/packages >> build/profile/packages.x86_64
+          fi
+          printf '%s\n' 'file_permissions["/root/customize_airootfs.sh"]="0:0:755"' \
+            >> build/profile/profiledef.sh
+          sed -i \
+            -e 's/^iso_name=.*/iso_name="voltageos"/' \
+            -e 's/^iso_label=.*/iso_label="VOLTAGE_ROLLING"/' \
+            -e 's/^iso_publisher=.*/iso_publisher="Voltage Studios"/' \
+            -e 's/^iso_application=.*/iso_application="voltage!os Arch Linux Rolling live image"/' \
+            -e 's/^iso_version=.*/iso_version="Rolling"/' \
+            build/profile/profiledef.sh
 
-      - name: Prepare ${{ matrix.arch }} image root
+      - name: Build ${{ matrix.arch }} ISO
         run: |
-          mkdir -p build/root
-          kiwi-ng system prepare \
-            --description ./build/kiwi \
-            --target-arch ${{ matrix.arch }} \
-            --target-dir ./build/root
+          mkdir -p build/work build/out
+          mkarchiso -v -w build/work -o build/out build/profile
 
-      - name: Build ${{ matrix.arch }} image
-        run: |
-          mkdir -p build/image
-          kiwi-ng system build \
-            --description ./build/kiwi \
-            --target-arch ${{ matrix.arch }} \
-            --target-dir ./build/image
-
-      - name: Upload ${{ matrix.arch }} image artifact
+      - name: Upload ${{ matrix.arch }} ISO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: voltageos-lagtrain-${{ matrix.arch }}
-          path: build/image/
+          name: voltageos-rolling-${{ matrix.arch }}
+          path: build/out/*.iso
           if-no-files-found: error
 
-      - name: Attest ${{ matrix.arch }} image provenance
+      - name: Attest ${{ matrix.arch }} ISO provenance
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: build/image/**/*
+          subject-path: build/out/*.iso

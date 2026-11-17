@@ -1,10 +1,9 @@
 NAME="voltage!os"
 ID=voltageos
-ID_LIKE=fedora
-PRETTY_NAME="voltage!os"
-VERSION="lagtrain"
-VERSION_ID=lagtrain
+ID_LIKE=arch
+PRETTY_NAME="voltage!os Rolling"
+VERSION="Rolling"
+VERSION_ID=rolling
 VERSION_CODENAME=lagtrain
-BASE_VERSION=44
-HOME_URL="https://github.com/voltageStudiosOfficial/voltageos-config"
-BUG_REPORT_URL="https://github.com/voltageStudiosOfficial/voltageos-config/issues"
+HOME_URL="https://github.com/voltagestudiosHQ/voltageos-config"
+BUG_REPORT_URL="https://github.com/voltagestudiosHQ/voltageos-config/issues"

@@ -1,0 +1,3 @@
+Server = https://ftp.halifax.rwth-aachen.de/archlinux-arm/$arch/$repo
+Server = https://ca.us.mirror.archlinuxarm.org/$arch/$repo
+Server = https://mirror.csclub.uwaterloo.ca/archlinuxarm/$arch/$repo
