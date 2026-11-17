@@ -21,6 +21,8 @@ jobs:
           grep -Fq 'firefox' archiso/packages
           grep -Fq 'thunderbird' archiso/packages
           grep -Fq 'plasma-desktop' archiso/packages
+          grep -Fq 'calamares' archiso/packages
+          grep -Fq 'Name=Install voltage!os' archiso/airootfs/usr/share/applications/install-voltageos.desktop
           grep -Fq 'linux-aarch64' archiso/aarch64/packages
           grep -Fq "bootmodes=('uefi.grub')" archiso/aarch64/profile-overrides.sh
           grep -Fq 'User=voltage' archiso/airootfs/etc/sddm.conf.d/10-voltage.conf

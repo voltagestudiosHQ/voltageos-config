@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Install voltage!os
+GenericName=System Installer
+Comment=Install voltage!os on this computer
+Exec=calamares
+Terminal=false
+Type=Application
+Icon=drive-harddisk
+Categories=System;

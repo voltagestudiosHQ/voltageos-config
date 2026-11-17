@@ -7,8 +7,9 @@ Linux repositories; the aarch64 image uses Arch Linux ARM repositories.
 ## Live image
 
 The images start a KDE Plasma desktop with a temporary `voltage` user. On
-x86_64, use `archinstall` from a terminal to install Arch Linux, or use the
-live environment to test the system. The aarch64 image boots with UEFI GRUB;
+x86_64, open **Install voltage!os** from the application menu to launch the
+graphical Calamares installer. You can also run `archinstall` from a terminal.
+Use the live environment to test the system. The aarch64 image boots with UEFI GRUB;
 installation and boot support depend on the ARM hardware. Changes made in the
 live session are not persistent.
 
