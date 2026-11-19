@@ -2,14 +2,39 @@ name: Build
 
 on:
   schedule:
-    - cron: 0 3 * * *
+    - cron: '0 10,11 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  schedule-gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - name: Run manually or at 3:00 AM Pacific
+        id: gate
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          pacific_hour="$(TZ=America/Los_Angeles date +'%H')"
+          if [[ "$pacific_hour" == "03" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "This scheduled run is not at 3:00 AM Pacific; skipping the build."
+          fi
+
   validate:
+    needs: schedule-gate
+    if: needs.schedule-gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -134,17 +159,109 @@ jobs:
 
       - name: Build ${{ matrix.arch }} ISO
         run: |
+          set -euo pipefail
           mkdir -p build/work build/out
           mkarchiso -v -w build/work -o build/out build/profile
 
-      - name: Upload ${{ matrix.arch }} ISO artifact
+      - name: Record installed package versions
+        run: |
+          set -euo pipefail
+          dbpath="$(find build/work -type d -path '*/var/lib/pacman/local' -print -quit)"
+          test -n "$dbpath"
+          pacman -Q --dbpath "$dbpath" | sort \
+            > "build/out/voltageos-${{ matrix.arch }}-packages.txt"
+
+      - name: Upload ${{ matrix.arch }} ISO and package versions
         uses: actions/upload-artifact@v4
         with:
           name: voltageos-rolling-${{ matrix.arch }}
-          path: build/out/*.iso
+          path: build/out/*
           if-no-files-found: error
 
       - name: Attest ${{ matrix.arch }} ISO provenance
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: build/out/*.iso
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository and tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          export LC_ALL=C
+          export TZ=America/Los_Angeles
+
+          tag="$(date +'%m.%d.%Y-%H.%M')"
+          title="$(date +'%b %-d, %Y at %-I:%M %p %Z')"
+
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "Tag $tag already exists; refusing to overwrite its release." >&2
+            exit 1
+          fi
+
+          previous_tag="$(
+            git tag --list '[0-9][0-9].[0-9][0-9].[0-9][0-9][0-9][0-9]-[0-9][0-9].[0-9][0-9]' \
+              --sort=-creatordate | head -n 1
+          )"
+
+          {
+            echo "## Installed package versions"
+            echo
+
+            for packages in release-assets/voltageos-rolling-*/voltageos-*-packages.txt; do
+              [[ -f "$packages" ]] || continue
+              arch="${packages##*/voltageos-}"
+              arch="${arch%-packages.txt}"
+
+              echo "### $arch"
+              echo
+              echo '```text'
+              cat "$packages"
+              echo '```'
+              echo
+            done
+
+            echo "## Commits since the previous release"
+            echo
+
+            if [[ -n "$previous_tag" ]]; then
+              git log --no-merges --pretty=format:'- %h %s' "$previous_tag..$GITHUB_SHA"
+            else
+              echo "_No earlier matching version tag was found; listing repository history._"
+              git log --no-merges --pretty=format:'- %h %s' "$GITHUB_SHA"
+            fi
+
+            echo
+          } > release-notes.md
+
+          mapfile -t isos < <(find release-assets -type f -name '*.iso' -print | sort)
+          if [[ "${#isos[@]}" -eq 0 ]]; then
+            echo "No ISO files were downloaded; refusing to create a release." >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "$title" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+
+          gh release create "$tag" "${isos[@]}" \
+            --title "$title" \
+            --notes-file release-notes.md \
+            --target "$GITHUB_SHA"
