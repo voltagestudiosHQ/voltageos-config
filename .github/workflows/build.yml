@@ -52,7 +52,8 @@ jobs:
           grep -Fq 'Name=Install voltage!os' archiso/airootfs/usr/share/applications/install-voltageos.desktop
           grep -Fq 'linux-aarch64' archiso/aarch64/packages
           grep -Fq "bootmodes=('uefi.grub')" archiso/aarch64/profile-overrides.sh
-          grep -Fq 'User=voltage' archiso/airootfs/etc/sddm.conf.d/10-voltage.conf
+          grep -Fq 'User=john.doe' archiso/airootfs/etc/sddm.conf.d/10-voltage.conf
+          grep -Fq 'useradd --uid 2012 --comment "John Doe"' archiso/airootfs/root/customize_airootfs.sh
           test -x archiso/airootfs/root/customize_airootfs.sh
           test -f archiso/aarch64/linux-aarch64.preset
           test -f archiso/aarch64/pacman.conf

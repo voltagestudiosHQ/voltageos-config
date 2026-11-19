@@ -10,8 +10,8 @@ if [[ -f /boot/Image ]]; then
   mkinitcpio -p linux-aarch64
 fi
 
-useradd --create-home --groups wheel --shell /bin/bash voltage
-passwd --lock voltage
+useradd --uid 2012 --comment "John Doe" --create-home --groups wheel --shell /bin/bash john.doe
+passwd --lock john.doe
 passwd --lock root
 
 chmod 0440 /etc/sudoers.d/10-voltage-live
