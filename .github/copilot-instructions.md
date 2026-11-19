@@ -11,6 +11,10 @@ The active build profile uses ArchISO; `kiwi/` is not used by the GitHub Actions
 There is no conventional unit-test framework or local package manifest. The GitHub Actions
 workflow is the source of truth for validation and builds:
 
+- Open the repository in the provided `.devcontainer/` to use an Arch Linux environment
+  with `archiso`, Python, Git, QEMU, and AArch64 firmware packages preinstalled. The
+  container is privileged because `mkarchiso` needs filesystem mounting access.
+
 - `.github/workflows/build.yml` performs lightweight repository validation, builds both
   `x86_64` and `aarch64` ISOs, records package versions, and creates a GitHub release.
 - The workflow normally runs at 3:00 AM Pacific on a schedule and can be run manually

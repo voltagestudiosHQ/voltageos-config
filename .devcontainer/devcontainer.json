@@ -1,0 +1,13 @@
+{
+  "name": "voltage!os Arch Linux",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "runArgs": [
+    "--privileged"
+  ],
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "postCreateCommand": "sudo pacman -Syu --needed --noconfirm"
+}
