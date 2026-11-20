@@ -49,6 +49,7 @@ esac
 command -v "$qemu_command" >/dev/null 2>&1 || die "required command not found: $qemu_command"
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+mkdir -p "$repo_root/archiso/airootfs/etc/skel"
 run_root="/tmp/voltageos-easyvm"
 mkdir -p "$run_root"
 run_dir="$(mktemp -d "$run_root/$target_arch.XXXXXX")"
@@ -116,6 +117,7 @@ qemu_args=(
   -display none
   -monitor none
   -vnc 127.0.0.1:0
+  -virtfs "local,path=$repo_root/archiso/airootfs/etc/skel,mount_tag=voltageos-skel,security_model=none,id=voltageos-skel"
   -cdrom "$iso_path"
   -drive "file=$disk_path,format=vpc,if=virtio"
   -nic user,model=virtio-net-pci
@@ -138,6 +140,7 @@ fi
 
 printf 'ISO: %s\nDisk: %s\nVNC: 127.0.0.1:5900\n' "$iso_path" "$disk_path"
 printf 'noVNC: http://localhost:6080/vnc.html?autoconnect=true&resize=scale\n'
+printf 'Plasma defaults share: sudo mkdir -p /mnt/voltageos-skel && sudo mount -t 9p -o trans=virtio,version=9p2000.L voltageos-skel /mnt/voltageos-skel\n'
 
 qemu_pid=""
 novnc_pid=""

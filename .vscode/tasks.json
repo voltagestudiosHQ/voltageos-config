@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Launch voltage!os Plasma VNC",
+			"type": "shell",
+			"command": "./easyvm.sh",
+			"args": [
+				"x86_64"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
