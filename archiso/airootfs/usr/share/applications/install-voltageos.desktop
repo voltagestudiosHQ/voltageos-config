@@ -5,5 +5,5 @@ Comment=Install voltage!os on this computer
 Exec=calamares
 Terminal=false
 Type=Application
-Icon=drive-harddisk
+Icon=/usr/share/calamares/branding/voltageos/logo.png
 Categories=System;
