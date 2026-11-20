@@ -1,8 +1,0 @@
-[Plymouth Theme]
-Name=voltage!os
-Description=voltage!os codename lagtrain boot theme
-ModuleName=script
-
-[script]
-ImageDir=/usr/share/plymouth/themes/voltageos
-ScriptFile=/usr/share/plymouth/themes/voltageos/voltageos.script
