@@ -30,6 +30,19 @@ python3 -c 'import ast; ast.parse(open("archiso/aarch64/patch_grub.py").read())'
 git diff --check
 ```
 
+The Makefile mirrors the CI validation and preparation steps:
+
+```bash
+make check           # validate configuration and whitespace
+make validate        # run one repository validation pass
+make whitespace      # run only git diff --check
+make prepare-x86_64  # construct build/profile for x86_64
+make prepare-aarch64 # construct build/profile for aarch64
+make build-x86_64    # prepare and build x86_64 (requires privileged ArchISO host)
+make build-aarch64   # prepare and build aarch64 (requires native ARM host and firmware setup)
+make clean           # remove build/profile, build/work, and build/out
+```
+
 Run one validation check by itself, for example:
 
 ```bash
@@ -47,6 +60,18 @@ is the authoritative build procedure:
 - `aarch64`: use an Arch Linux ARM environment, set up the files under
   `archiso/aarch64/`, patch `/usr/bin/mkarchiso` with
   `python archiso/aarch64/patch_grub.py`, then prepare and run the same ArchISO profile.
+
+For an interactive native-architecture VM test, use:
+
+```bash
+./easyvm.sh                 # infer x86_64 or aarch64
+./easyvm.sh x86_64
+./easyvm.sh aarch64
+```
+
+The script requires a native host and ArchISO, QEMU, noVNC/websockify, and QEMU firmware
+tools. It creates an ISO and 20 GB VHD under `/tmp/voltageos-easyvm/` and starts noVNC on port
+6080; `.vscode/tasks.json` provides a VS Code task for the x86_64 VM.
 
 Do not treat `fedora-minimal.ks`, `dnf.conf`, or `kiwi/config.xml` as active build inputs.
 
@@ -98,3 +123,5 @@ ISOs plus generated `voltageos-*-packages.txt` files.
   `kiwi/root/usr/share/plymouth/themes/voltageos/` for the inactive legacy tree.
 - When changing build validation, update the equivalent grep/test step in
   `.github/workflows/build.yml` and the implementation/configuration in the same change.
+- For repository contributions, work on a separate branch rather than `main`, keep changes
+  focused, and open a reviewed PR against `main`.
