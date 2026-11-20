@@ -7,7 +7,17 @@
   "runArgs": [
     "--privileged"
   ],
+  "forwardPorts": [
+    6080
+  ],
   "remoteUser": "vscode",
   "containerUser": "vscode",
-  "postCreateCommand": "sudo pacman -Syu --needed --noconfirm"
+  "postCreateCommand": "sudo pacman -Syu --needed --noconfirm",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-containers"
+      ]
+    }
+  }
 }

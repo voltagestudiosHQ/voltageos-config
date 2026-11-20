@@ -38,7 +38,7 @@ case "$target_arch:$host_arch" in
   *) die "build $target_arch on a native $target_arch host (current host: $host_arch)" ;;
 esac
 
-for command_name in mkarchiso qemu-img; do
+for command_name in mkarchiso qemu-img novnc_proxy; do
   command -v "$command_name" >/dev/null 2>&1 || die "required command not found: $command_name"
 done
 
@@ -137,4 +137,24 @@ if [[ "$target_arch" == aarch64 ]]; then
 fi
 
 printf 'ISO: %s\nDisk: %s\nVNC: 127.0.0.1:5900\n' "$iso_path" "$disk_path"
-exec "$qemu_command" "${qemu_args[@]}"
+printf 'noVNC: http://localhost:6080/vnc.html?autoconnect=true&resize=scale\n'
+
+qemu_pid=""
+novnc_pid=""
+stop_vm() {
+  for process_pid in "$novnc_pid" "$qemu_pid"; do
+    if [[ -n "$process_pid" ]]; then
+      kill "$process_pid" 2>/dev/null || true
+      wait "$process_pid" 2>/dev/null || true
+    fi
+  done
+}
+trap stop_vm EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+"$qemu_command" "${qemu_args[@]}" &
+qemu_pid=$!
+novnc_proxy --listen 127.0.0.1:6080 --vnc 127.0.0.1:5900 &
+novnc_pid=$!
+wait -n "$qemu_pid" "$novnc_pid"
