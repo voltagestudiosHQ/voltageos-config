@@ -1,4 +1,4 @@
-# voltage!os
+# ![voltage!os™ logo](/plymouth/logo.png)
 
 An operating system for everyone.
 
