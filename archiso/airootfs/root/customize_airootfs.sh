@@ -21,3 +21,9 @@ systemctl enable NetworkManager.service
 systemctl enable chronyd.service
 systemctl enable firewalld.service
 systemctl enable sddm.service
+
+for settings in /etc/calamares/settings.conf /usr/share/calamares/settings.conf; do
+    if [[ -f "$settings" ]] && grep -q '^branding:' "$settings"; then
+        sed -i 's/^branding:.*/branding: voltageos/' "$settings"
+    fi
+done

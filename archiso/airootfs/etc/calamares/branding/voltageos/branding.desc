@@ -1,0 +1,20 @@
+---
+componentName: voltageos
+
+strings:
+    productName:         voltage!os
+    shortProductName:    voltage!os
+    shortVersion:        Rolling
+    version:             Rolling
+    versionedName:       voltage!os Rolling
+    shortVersionedName:  voltage!os Rolling
+    bootloaderEntryName: voltage!os
+    productUrl:          https://github.com/voltagestudiosHQ
+    supportUrl:          https://github.com/voltagestudiosHQ
+    knownIssuesUrl:      https://github.com/voltagestudiosHQ/voltageos-config/issues
+    releaseNotesUrl:     https://github.com/voltagestudiosHQ/voltageos-config/releases
+
+images:
+    productLogo:     "logo.png"
+    productIcon:     "logo.png"
+    productWelcome:  "logo.png"
