@@ -9,7 +9,8 @@ RUN pacman -Syu --needed --noconfirm \
       python \
       qemu-full \
       sudo \
-      git-lfs
+      git-lfs \
+      zsh
 RUN python -m venv /opt/novnc-venv \
     && /opt/novnc-venv/bin/pip install --no-cache-dir websockify==0.13.0 \
     && git clone --depth 1 --branch v1.7.0 \
@@ -18,6 +19,6 @@ RUN python -m venv /opt/novnc-venv \
 
 ENV PATH="/opt/novnc-venv/bin:${PATH}"
 
-RUN useradd --create-home --shell /bin/bash --groups wheel vscode \
+RUN useradd --create-home --shell ${which zsh} --groups wheel vscode \
     && printf '%s\n' 'vscode ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/vscode \
     && chmod 0440 /etc/sudoers.d/vscode
