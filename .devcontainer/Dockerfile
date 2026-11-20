@@ -8,7 +8,8 @@ RUN pacman -Syu --needed --noconfirm \
       openssh \
       python \
       qemu-full \
-      sudo
+      sudo \
+      git-lfs
 RUN python -m venv /opt/novnc-venv \
     && /opt/novnc-venv/bin/pip install --no-cache-dir websockify==0.13.0 \
     && git clone --depth 1 --branch v1.7.0 \
