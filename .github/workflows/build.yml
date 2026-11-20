@@ -50,6 +50,10 @@ jobs:
           grep -Fq 'plasma-desktop' archiso/packages
           grep -Fq 'calamares' archiso/packages
           grep -Fq 'Name=Install voltage!os' archiso/airootfs/usr/share/applications/install-voltageos.desktop
+          grep -Fq 'Icon=/usr/share/calamares/branding/voltageos/logo.png' archiso/airootfs/usr/share/applications/install-voltageos.desktop
+          grep -Fq 'branding: voltageos' archiso/airootfs/root/customize_airootfs.sh
+          grep -Fq 'productLogo:     "logo.png"' archiso/airootfs/etc/calamares/branding/voltageos/branding.desc
+          cmp -s plymouth/logo.png archiso/airootfs/etc/calamares/branding/voltageos/logo.png
           grep -Fq 'linux-aarch64' archiso/aarch64/packages
           grep -Fq "bootmodes=('uefi.grub')" archiso/aarch64/profile-overrides.sh
           grep -Fq 'User=john.doe' archiso/airootfs/etc/sddm.conf.d/10-voltage.conf
